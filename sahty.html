@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام أتمتة فحص التقارير الطبية</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        :root { --primary-color: #1a5d1a; --secondary-color: #27ae60; --bg-color: #f8faf9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; color: #333; line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid var(--primary-color); position: relative; }
+        
+        .management-header { background: #f1f9f1; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-right: 5px solid var(--primary-color); text-align: right; }
+        .management-header h3 { margin-top: 0; color: var(--primary-color); }
+        
+        .upload-section { border: 2px dashed var(--secondary-color); padding: 40px; margin-bottom: 25px; border-radius: 12px; cursor: pointer; transition: 0.3s; background: #fff; text-align: center; }
+        .upload-section:hover { background-color: #f1f9f1; }
+        
+        .result-group { text-align: right; margin-top: 25px; display:none; animation: fadeIn 0.5s; }
+        .result-item { display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #eee; border-right: 6px solid var(--secondary-color); }
+        .result-item label { font-weight: bold; color: #555; flex: 1; }
+        .result-item span { font-weight: 700; color: var(--primary-color); flex: 2; text-align: center; font-size: 1.1rem; }
+        
+        button { background-color: var(--secondary-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: inherit; transition: 0.2s; }
+        button:hover { background-color: #219150; }
+        .copy-btn { background-color: #34495e; font-size: 0.85rem; padding: 6px 12px; }
+        
+        .action-buttons { display: flex; gap: 15px; margin-top: 30px; }
+        .link-btn { background-color: #1a73e8; flex: 2; text-decoration: none; color: white; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; text-align: center; display: block; }
+        .reset-btn { background-color: #e74c3c; flex: 1; font-size: 1.1rem; }
+
+        .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 1rem; color: #666; }
+        .footer a { color: #1da1f2; text-decoration: none; font-weight: bold; margin-right: 10px; }
+
+        #status { color: #27ae60; font-weight: bold; margin-top: 10px; min-height: 24px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="management-header">
+        <h3>نظام أتمتة التحقق من التقارير الطبية</h3>
+        <p>تم استعادة فصل تواريخ الإجازة (بداية ونهاية) بناءً على بيانات التقرير الرسمية لضمان دقة المطابقة.</p>
+    </div>
+
+    <div id="dropZone" class="upload-section" onclick="document.getElementById('fileInput').click()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <br>
+        <strong>انقر هنا لاختيار ملف الإجازة</strong>
+        <input type="file" id="fileInput" hidden accept="application/pdf">
+        <div id="status"></div>
+    </div>
+
+    <div id="results" class="result-group">
+        <div class="result-item">
+            <label>اسم المريض:</label>
+            <span id="patientName">---</span>
+            <button class="copy-btn" onclick="copyText('patientName')">نسخ</button>
+        </div>
+        <div class="result-item">
+            <label>رمز الإجازة:</label>
+            <span id="leaveIdText">---</span>
+            <button class="copy-btn" onclick="copyText('leaveIdText')">نسخ</button>
+        </div>
+        <div class="result-item">
+            <label>رقم الهوية:</label>
+            <span id="nationalIdText">---</span>
+            <button class="copy-btn" onclick="copyText('nationalIdText')">نسخ</button>
+        </div>
+        <div class="result-item">
+            <label>بداية الإجازة (هجري):</label>
+            <span id="hijriStart">---</span>
+            <button class="copy-btn" onclick="copyText('hijriStart')">نسخ</button>
+        </div>
+        <div class="result-item">
+            <label>نهاية الإجازة (هجري):</label>
+            <span id="hijriEnd">---</span>
+            <button class="copy-btn" onclick="copyText('hijriEnd')">نسخ</button>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="https://www.seha.sa/ui#/inquiries/slenquiry" target="_blank" class="link-btn">فتح موقع استعلام صحة</a>
+            <button class="reset-btn" onclick="resetTool()">تقرير جديد</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        تطوير: <strong>عمر حسن العطاس</strong> 
+        <a href="https://x.com/omer_attas" target="_blank">
+            <svg style="vertical-align: middle; margin-left: 5px;" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            @omer_attas
+        </a>
+    </div>
+</div>
+
+<script>
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const statusDiv = document.getElementById('status');
+        if (!file) return;
+        
+        statusDiv.innerText = "جاري القراءة...";
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            let fullText = "";
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(" ");
+            }
+
+            // استخراج البيانات
+            const leaveMatch = fullText.match(/[A-Z]{3}\d{10,}/); 
+            const idMatch = fullText.match(/\b(1\d{9}|2\d{9})\b/);
+            const nameMatch = fullText.match(/([\u0600-\u06FF\s]{8,})\s*الاسم/);
+            const hijriDates = fullText.match(/\d{2}-\d{2}-14\d{2}/g);
+
+            if (leaveMatch) document.getElementById('leaveIdText').innerText = leaveMatch[0];
+            if (idMatch) document.getElementById('nationalIdText').innerText = idMatch[0];
+            
+            if (nameMatch) {
+                let words = nameMatch[1].trim().split(/\s+/).filter(w => w.length > 1);
+                document.getElementById('patientName').innerText = words.reverse().join(" ");
+            }
+
+            // فصل التواريخ الهجرية 
+            if (hijriDates && hijriDates.length >= 2) {
+                document.getElementById('hijriStart').innerText = hijriDates[0];
+                document.getElementById('hijriEnd').innerText = hijriDates[1];
+            } else if (hijriDates && hijriDates.length == 1) {
+                document.getElementById('hijriStart').innerText = hijriDates[0];
+                document.getElementById('hijriEnd').innerText = hijriDates[0];
+            }
+
+            statusDiv.innerText = "تم بنجاح ✓";
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('dropZone').style.display = 'none';
+
+        } catch (error) {
+            statusDiv.innerText = "خطأ في قراءة الملف";
+        }
+    });
+
+    function resetTool() {
+        location.reload();
+    }
+
+    function copyText(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text);
+        const btn = event.target;
+        btn.innerText = "تم!";
+        setTimeout(() => btn.innerText = "نسخ", 1000);
+    }
+</script>
+</body>
+</html>
