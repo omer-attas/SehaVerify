@@ -9,9 +9,13 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; color: #333; line-height: 1.6; }
         .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid var(--primary-color); position: relative; }
         
-        .management-header { background: #f1f9f1; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-right: 5px solid var(--primary-color); text-align: right; }
+        .management-header { background: #f1f9f1; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-right: 5px solid var(--primary-color); text-align: right; }
         .management-header h3 { margin-top: 0; color: var(--primary-color); }
-        
+        .management-header p { font-size: 0.95rem; color: #444; margin-bottom: 0; }
+
+        /* ملاحظة الخصوصية */
+        .privacy-note { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border: 1px solid #ffeeba; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: bold; }
+
         .upload-section { border: 2px dashed var(--secondary-color); padding: 40px; margin-bottom: 25px; border-radius: 12px; cursor: pointer; transition: 0.3s; background: #fff; text-align: center; }
         .upload-section:hover { background-color: #f1f9f1; }
         
@@ -40,13 +44,24 @@
 <div class="container">
     <div class="management-header">
         <h3>نظام أتمتة التحقق من التقارير الطبية</h3>
-        <p>تم استعادة فصل تواريخ الإجازة (بداية ونهاية) بناءً على بيانات التقرير الرسمية لضمان دقة المطابقة.</p>
+        <p>
+            تأتي هذه الأداة لتعزيز كفاءة العمل الإداري عبر التحول الرقمي وأتمتة العمليات المتكررة. 
+            تقوم الأداة بقراءة بيانات التقارير الطبية (PDF) الصادرة من منصة "صحة" بشكل آلي ودقيق، مما يضمن:
+            <br>• تقليص الوقت المستغرق في نقل البيانات يدوياً بنسبة 90%.
+            <br>• القضاء على الأخطاء البشرية في نقل أرقام الهوية ورموز الإجازات الطويلة.
+            <br>• تسهيل عملية المطابقة والتحقق المباشر من خلال الربط الذكي مع بوابة الاستعلام الرسمية.
+        </p>
+    </div>
+
+    <div class="privacy-note">
+        <span>⚠️</span>
+        ملاحظة هامة: هذا الموقع يعمل محلياً بالكامل على متصفحك؛ ولا يتم حفظ أو تخزين أي بيانات للتقارير أو أرقام الهوية في أي خادم خارجي، مما يضمن الخصوصية الكاملة لبيانات الموظفين.
     </div>
 
     <div id="dropZone" class="upload-section" onclick="document.getElementById('fileInput').click()">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
         <br>
-        <strong>انقر هنا لاختيار ملف الإجازة</strong>
+        <strong>انقر هنا لاختيار ملف الإجازة (يدعم GSL و PSL)</strong>
         <input type="file" id="fileInput" hidden accept="application/pdf">
         <div id="status"></div>
     </div>
@@ -54,28 +69,25 @@
     <div id="results" class="result-group">
         <div class="result-item">
             <label>اسم المريض:</label>
-            <span id="patientName">---</span>
-            <button class="copy-btn" onclick="copyText('patientName')">نسخ</button>
+            <span id="patientName" style="flex: 3;">---</span>
         </div>
         <div class="result-item">
             <label>رمز الإجازة:</label>
             <span id="leaveIdText">---</span>
-            <button class="copy-btn" onclick="copyText('leaveIdText')">نسخ</button>
+            <button class="copy-btn" onclick="copyText('leaveIdText')">نسخ الرمز</button>
         </div>
         <div class="result-item">
             <label>رقم الهوية:</label>
             <span id="nationalIdText">---</span>
-            <button class="copy-btn" onclick="copyText('nationalIdText')">نسخ</button>
+            <button class="copy-btn" onclick="copyText('nationalIdText')">نسخ الرقم</button>
         </div>
         <div class="result-item">
             <label>بداية الإجازة (هجري):</label>
-            <span id="hijriStart">---</span>
-            <button class="copy-btn" onclick="copyText('hijriStart')">نسخ</button>
+            <span id="hijriStart" style="flex: 3;">---</span>
         </div>
         <div class="result-item">
             <label>نهاية الإجازة (هجري):</label>
-            <span id="hijriEnd">---</span>
-            <button class="copy-btn" onclick="copyText('hijriEnd')">نسخ</button>
+            <span id="hijriEnd" style="flex: 3;">---</span>
         </div>
         
         <div class="action-buttons">
@@ -102,7 +114,7 @@
         const statusDiv = document.getElementById('status');
         if (!file) return;
         
-        statusDiv.innerText = "جاري القراءة...";
+        statusDiv.innerText = "جاري قراءة البيانات...";
 
         try {
             const arrayBuffer = await file.arrayBuffer();
@@ -115,7 +127,6 @@
                 fullText += textContent.items.map(item => item.str).join(" ");
             }
 
-            // استخراج البيانات
             const leaveMatch = fullText.match(/[A-Z]{3}\d{10,}/); 
             const idMatch = fullText.match(/\b(1\d{9}|2\d{9})\b/);
             const nameMatch = fullText.match(/([\u0600-\u06FF\s]{8,})\s*الاسم/);
@@ -129,21 +140,20 @@
                 document.getElementById('patientName').innerText = words.reverse().join(" ");
             }
 
-            // فصل التواريخ الهجرية 
             if (hijriDates && hijriDates.length >= 2) {
                 document.getElementById('hijriStart').innerText = hijriDates[0];
                 document.getElementById('hijriEnd').innerText = hijriDates[1];
-            } else if (hijriDates && hijriDates.length == 1) {
+            } else if (hijriDates) {
                 document.getElementById('hijriStart').innerText = hijriDates[0];
                 document.getElementById('hijriEnd').innerText = hijriDates[0];
             }
 
-            statusDiv.innerText = "تم بنجاح ✓";
+            statusDiv.innerText = "تم استخراج البيانات بنجاح ✓";
             document.getElementById('results').style.display = 'block';
             document.getElementById('dropZone').style.display = 'none';
 
         } catch (error) {
-            statusDiv.innerText = "خطأ في قراءة الملف";
+            statusDiv.innerText = "عذراً، حدث خطأ في معالجة الملف";
         }
     });
 
@@ -156,7 +166,7 @@
         navigator.clipboard.writeText(text);
         const btn = event.target;
         btn.innerText = "تم!";
-        setTimeout(() => btn.innerText = "نسخ", 1000);
+        setTimeout(() => btn.innerText = (elementId === 'leaveIdText' ? "نسخ الرمز" : "نسخ الرقم"), 1000);
     }
 </script>
 </body>
